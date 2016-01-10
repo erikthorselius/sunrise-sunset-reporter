@@ -1,0 +1,6 @@
+# Sunrise and sunset reporter
+This small application reports when the sunrise or sunset occurs.
+It reports it to a zeromq proxy. 
+
+Check the Dockerfile and the service file to se how to run it
+
