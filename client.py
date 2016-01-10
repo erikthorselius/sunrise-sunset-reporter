@@ -7,7 +7,7 @@ import signal
 from datetime import date, datetime
 from time import sleep
 from astral import Astral
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 socket_address = os.getenv('PROXY_SOCKET').strip()
@@ -35,28 +35,23 @@ def add_todays_jobs(scheduler, socket):
     scheduler.add_job(send, 'date', run_date=sun['sunrise'], args=(socket, b'sunrise', "Sunrise is here!"))
 
 
-def signal_handler(signal, frame):
-    print('You pressed Ctrl+C! Shutting down')
-    socket.close(linger=1)
-    sys.exit(0)
-
-
 if __name__ == "__main__":
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     logging.info('Connected to address %s', socket_address)
     socket.connect(socket_address)
-    scheduler = BlockingScheduler()
+    scheduler = BackgroundScheduler()
     add_todays_jobs(scheduler, socket)
     scheduler.add_job(add_todays_jobs, 'cron', day='*', hour='00', minute='5', args=(scheduler, socket))
 
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
-
     print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
     scheduler.start()
-    # try:
-    # except (KeyboardInterrupt, SystemExit):
-    #    print('Exiting!')
-    #    socket.close(linger=1)
-    #    context.destroy(linger=1)
+    while True:
+        try:
+            sleep(1)
+        except (KeyboardInterrupt, SystemExit):
+            print('Exiting!')
+            scheduler.shutdown(wait=False)
+            socket.close(linger=1)
+            context.destroy(linger=1)
+            sys.exit(0)
