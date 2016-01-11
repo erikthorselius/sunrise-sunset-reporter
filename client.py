@@ -48,6 +48,7 @@ if __name__ == "__main__":
     scheduler.start()
     while True:
         try:
+            socket.send_multipart([b'health_check', bytes(json.dumps({'type': 'health_check', 'id': 'sunrise-sunset-reporter'}), 'utf8')])
             sleep(1)
         except (KeyboardInterrupt, SystemExit):
             print('Exiting!')
